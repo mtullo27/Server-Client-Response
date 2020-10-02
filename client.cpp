@@ -11,7 +11,7 @@
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <netinet/in.h> 
-#include <vector.h>
+#include <vector>
 
 using namespace std;
 
@@ -30,54 +30,56 @@ int main() {
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 	
 	//set the timeout at 1 second for a reply
-	sockfd.settimeout(1)
+	struct timeval timeout;
+	timeout.tv_sec = 1;
+	timeout.tv_usec = 0;
+	if(setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+	  perror("setsockopt failed\n");
 	
 	//keeping count of the sequence count
 	count = 1;
 	
 	//create a list to store trip times
-	vector<int> times;
+	vector<double> times;
 
 	//creating a while loop repeat continuoussly
 	while(count<=10){
 		//gets the current time
-		start = time.clock();
-		//assigning the message to a variable
-		string message = "" + to_string(count);
+	        start = time(0);
 
 		//sending message to the server
-		sockfd.sendto(message.encode("utf-8"),(IP,PORT,0));
-
-		//Excetption Handeling
-		try{
+		sendto(sockfd, (const char *) buffer, strlen(buffer), MSG_CONFIRM, (const struct sockaddr *) &servaddr, len);
 			//recieving messages from the server
-			message = "" + to_string(sockfd.recvfrom(1024)[0]);
-			string addr = "" + to_string(sockfd.recvfrom(1024)[1]);
+		        int n;
+		        n = recvfrom(sockfd, (char *)buffer, sizeof(buffer), MSG_WAITALL, (struct sockaddr *) &servaddr, &len);
+			buffer[n] = '\0';
 			//calculate and print elapsed time
-			end = (time.clock() - start);
-			times.push_back(end);
-			cout << "Ping Number " << count << "Round Trip Time " << end << " Seconds" << endl;
-			//if there is no reply within one second then it will time out
-		}
-		catch(socket.timout){
-			cout << "Connection Timed Out on Ping Number " << count << endl;
-		}
+			double total = (double)difftime(time(0), start);
+			//timeout handling
+			if(total >= 1.0){
+			  cout << "Connection Time out on Ping Number " << count << endl;
+			}
+			//it works
+			else{
+			  times.push_back(end);
+			  cout << "Ping Number " << count << "Round Trip Time " << end << " Seconds" << endl;
+			}
 		count++;
 	}
 	//check if the count is 10 or not
 	if(count > 10){
 		cout << "Sent " << count << " Packets" << endl;
-		cout << "Recieved " << times.length() << " Packets" << endl;
+		cout << "Recieved " << times.size() << " Packets" << endl;
 	}
 
 	//calculating the packet loss rate
-	string lossRate = to_string(10-times.length()*10)
+	string lossRate = to_string(10-times.size()*10);
 	cout << "Packet Loss Rate: " << lossRate << endl;
 
 	//calculate average response time
 	double sum = 0;
-	for(int i = 0; i<time.length(); i++)
-		sum+=time[i];
-	cout << "Average Response Time: " << to_string(double(sum/time.length())) << " seconds" << endl;
+	for(int i = 0; i<times.size(); i++)
+	  sum+=times[i];
+	cout << "Average Response Time: " << to_string(double(sum/times.size())) << " seconds" << endl;
 	return 0; 
 } 
