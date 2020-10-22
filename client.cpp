@@ -1,7 +1,3 @@
-// UDP Pinger
-
-// Must have this server running before you can run the UDP Pinger Client code
-
 #include <iostream>
 #include <stdlib.h> 
 #include <unistd.h> 
