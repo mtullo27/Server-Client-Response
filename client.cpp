@@ -15,8 +15,8 @@
 
 using namespace std;
 
-#define PORT	 12000
-#define IP		 '127.0.0.1'
+#define PORT	 1027
+
 
 int main() { 
 	int sockfd, count;
@@ -37,57 +37,41 @@ int main() {
 	servaddr.sin_addr.s_addr = INADDR_ANY; // localhost
 	servaddr.sin_port = htons(PORT); // port number
 	
-	//set the timeout at 1 second for a reply
-	struct timeval timeout;
-	timeout.tv_sec = 1;
-	timeout.tv_usec = 0;
-	if(setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
-	  perror("setsockopt failed\n");
-	
-	//keeping count of the sequence count
-	count = 1;
-	
-	//create a list to store trip times
-	vector<double> times;
+	//Set timeout for 1 second
+	struct timeval tv;
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+	if(setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(tv)) < 0) {
+   		 perror("Error");
+	}
+	//Keep track of number of pings
+        count = 0;
+	//send 10 pings in a loop
 
-	//creating a while loop repeat continuoussly
-	while(count<=10){
-		//gets the current time
+	len = sizeof(servaddr);
+	while(count<10){
+	for(int i = 0; i<10; i++){
+		//Get current time
 	        start = time(0);
 
-		//sending message to the server
+		//Send message to server
 		sendto(sockfd, (const char *) buffer, strlen(buffer), MSG_CONFIRM, (const struct sockaddr *) &servaddr, len);
-		//recieving messages from the server
+		//Recieve message form server
 		int n;
 	        n = recvfrom(sockfd, (char *)buffer, sizeof(buffer), MSG_WAITALL, (struct sockaddr *) &servaddr, &len);
 		buffer[n] = '\0';
-		//calculate and print elapsed time
+		//See how long has passed
 		double total = (double)difftime(time(0), start);
-		//timeout handling
+		//Check if ping sent for longer than a second
 		if(total >= 1.0){
 		  cout << "Connection Time out on Ping Number " << count << endl;
 		}
-		//it works
 		else{
-		  times.push_back(end);
 		  cout << "Ping Number " << count << "Round Trip Time " << end << " Seconds" << endl;
 		}
 		count++;
 	}
-	//check if the count is 10 or not
-	if(count > 10){
-		cout << "Sent " << count << " Packets" << endl;
-		cout << "Recieved " << times.size() << " Packets" << endl;
+	
 	}
-
-	//calculating the packet loss rate
-	string lossRate = to_string(10-times.size()*10);
-	cout << "Packet Loss Rate: " << lossRate << endl;
-
-	//calculate average response time
-	double sum = 0;
-	for(int i = 0; i<times.size(); i++)
-	  sum+=times[i];
-	cout << "Average Response Time: " << to_string(double(sum/times.size())) << " seconds" << endl;
 	return 0; 
 } 
